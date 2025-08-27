@@ -52,7 +52,7 @@ const StockChart: React.FC = () => {
     },
   });
   const [ticker, setTicker] = useState("AAPL");
-  const [selectedPeriod, setSelectedPeriod] = useState(PREDEFINED_PERIODS[5]); // 1Y by default
+  const [selectedPeriod] = useState(PREDEFINED_PERIODS[5]); // 1Y by default
 
   const [selectedSMAs, setSelectedSMAs] = useState<number[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
@@ -181,10 +181,6 @@ const StockChart: React.FC = () => {
         },
         tooltip: {
           split: true,
-          formatter: function (this: Highcharts.TooltipFormatterContextObject) {
-            // Custom tooltip formatting
-            return false; // Use default formatting
-          },
         },
       });
 
@@ -230,10 +226,9 @@ const StockChart: React.FC = () => {
       chart.container.addEventListener("mousemove", (e: any) => {
         const event = chart.pointer.normalize(e);
         const x = event.chartX;
-        const y = event.chartY;
         
         // Find the closest point
-        const points = chart.series[0].points;
+        const points = chart.series[0].points as any[];
         let closestPoint = points[0];
         let minDistance = Math.abs(closestPoint.plotX - x);
         
@@ -248,11 +243,10 @@ const StockChart: React.FC = () => {
         // Update current price and volume
         if (closestPoint) {
           setCurrentPrice(closestPoint.close);
-          setCurrentVolume(
-            chart.series[1].points.find(
-              (p: any) => p.x === closestPoint.x
-            )?.y
+          const volPoint = chart.series[1]?.points.find(
+            (p: any) => p.x === closestPoint.x
           );
+          setCurrentVolume(volPoint?.y ?? null);
           setCurrentOpen((closestPoint as any).open);
           setCurrentHigh((closestPoint as any).high);
           setCurrentLow((closestPoint as any).low);
@@ -331,7 +325,13 @@ return (
         {currentDate}
         </span>
         </span>
-      <div className="text-black flex items-center justify-start gap-2 mt-2 sm:mt-0">
+      <div className="text-black flex items-center justify-start gap-2 mt-2 sm:mt-0 flex-wrap">
+      <span className="text-black font-medium text-lg">
+        V:
+        <span className='text-red-500 text-lg font-medium ml-1'>
+        {currentVolume?.toFixed(2) || "N/A"}
+          </span> 
+        </span>
       <span className="text-black font-medium text-lg">
         O:
         <span className='text-red-500 text-lg font-medium ml-1'>
