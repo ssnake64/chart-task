@@ -19,7 +19,14 @@ const PREDEFINED_PERIODS = [
 ];
 
 const StockChart: React.FC = () => {
+
+  const [chartHeight, setChartHeight] = useState("600px");
+  const chartContainerRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState<Highcharts.Options>({
+    
+      chart: {
+      height: 600, // This sets the chart height
+    },
     title: { text: "Stock Price" },
     series: [],
     rangeSelector: {
@@ -44,7 +51,45 @@ const StockChart: React.FC = () => {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [currentVolume, setCurrentVolume] = useState<number | null>(null);
   const [currentDate, setCurrentDate] = useState<string>("");
+  const [currentOpen, setCurrentOpen] = useState<number | null>(null);
+  const [currentHigh, setCurrentHigh] = useState<number | null>(null);
+  const [currentLow, setCurrentLow] = useState<number | null>(null);
+  const [currentClose, setCurrentClose] = useState<number | null>(null);
   const chartRef = useRef<HighchartsReact.RefObject>(null);
+
+
+
+    // Function to calculate chart height based on available space
+    const calculateChartHeight = () => {
+      if (chartContainerRef.current) {
+        const containerHeight = chartContainerRef.current.offsetHeight;
+        const controlsHeight = 150; // Approximate height of controls
+        const availableHeight = containerHeight - controlsHeight;
+        return `${Math.max(400, availableHeight)}px`; // Minimum height of 400px
+      }
+      return "600px"; // Default height
+    };
+
+    // Update chart height on window resize
+    useEffect(() => {
+      const handleResize = () => {
+        setChartHeight(calculateChartHeight());
+        
+        // Also tell Highcharts to resize
+        if (chartRef.current && chartRef.current.chart) {
+          setTimeout(() => {
+            chartRef.current.chart.reflow();
+          }, 100);
+        }
+      };
+
+      window.addEventListener('resize', handleResize);
+      handleResize(); // Initial calculation
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }, []);
 
   // Calculate dates for API call
   const calculateDateRange = () => {
@@ -73,7 +118,7 @@ const StockChart: React.FC = () => {
       const multiplier = 1;
       const timespan = "day";
       
-      const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/${multiplier}/${timespan}/${startDate}/${endDate}?apiKey=pshN1v_d8lrdJTdTvJT74o9gayqQrYPN`;
+      const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/${multiplier}/${timespan}/${startDate}/${endDate}?apiKey=${import.meta.env.VITE_POLYGON_API}`;
       
       const res = await axios.get(url);
       const results = res.data.results;
@@ -112,19 +157,17 @@ const StockChart: React.FC = () => {
         }
         
         smaSeries.push({
-          type: "sma",
+
+          type: "line",
           name: `SMA(${period})`,
           data: smaData,
           color: getColorForSMA(period),
           lineWidth: 1,
-          marker: {
-            enabled: false,
-          },
-          tooltip: {
-            valueDecimals: 2,
-          },
+          marker: { enabled: false },
+          tooltip: { valueDecimals: 2 },
+        } as Highcharts.SeriesLineOptions);
+
         });
-      });
 
       // Prepare series array
       const series: Highcharts.SeriesOptionsType[] = [
@@ -207,10 +250,6 @@ const StockChart: React.FC = () => {
     fetchStockData(ticker);
   };
 
-  // Handle period change
-  const handlePeriodChange = (period: typeof PREDEFINED_PERIODS[0]) => {
-    setSelectedPeriod(period);
-  };
 
   // Handle chart events
   useEffect(() => {
@@ -244,6 +283,10 @@ const StockChart: React.FC = () => {
               (p: any) => p.x === closestPoint.x
             )?.y
           );
+          setCurrentOpen((closestPoint as any).open);
+          setCurrentHigh((closestPoint as any).high);
+          setCurrentLow((closestPoint as any).low);
+          setCurrentClose((closestPoint as any).close);
           setCurrentDate(new Date(closestPoint.x).toLocaleDateString());
         }
       });
@@ -251,94 +294,112 @@ const StockChart: React.FC = () => {
   }, [options]);
 
   // Fetch data on initial load
-  useEffect(() => {
-    fetchStockData(ticker);
-  }, []);
+useEffect(() => {
+  fetchStockData(ticker);
+}, [selectedSMAs, selectedPeriod]);
 
-  return (
-    <div className="stock-chart-container">
-      <div className="controls">
-        <form onSubmit={handleSubmit} className="ticker-form">
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            placeholder="Enter stock ticker (e.g., AAPL)"
-            className="bg-[#F0F0F0] text-black"
-          />
-          <button type="submit" className="bg-[#F0F0F0] text-black">Load Chart</button>
-        </form>
+return (
+  <div
+    ref={chartContainerRef}
+    className="min-h-screen w-full flex flex-col justify-center items-center"
+  >
+    
+    {/* Controls */}
+    <div className="flex flex-col md:flex-row gap-4 w-full max-w-6xl flex-wrap">
+      {/* Ticker Form */}
+      <form
+        onSubmit={handleSubmit}
+        className="flex gap-2 items-center w-full md:w-auto"
+      >
+        <input
+          type="text"
+          value={ticker}
+          onChange={(e) => setTicker(e.target.value.toUpperCase())}
+          placeholder="Enter stock ticker (e.g., AAPL)"
+          className="bg-gray-200 text-black px-3 py-2 border border-gray-300 rounded flex-1"
+        />
+        <button
+          type="submit"
+          className="px-3 py-2 bg-blue-500 border rounded cursor-pointer transition-colors duration-200 hover:bg-blue-600"
+        >
+          Load Chart
+        </button>
+      </form>
 
-        <div className="period-selector">
-          <label>Time Period:</label>
-          {PREDEFINED_PERIODS.map((period) => (
-            <button
-              key={period.value}
-              type="button"
-              className={selectedPeriod.value === period.value ? "active" : "text-black"}
-              onClick={() => handlePeriodChange(period)}
-            >
-              {period.label}
-            </button>
-          ))}
-        </div>
-
-        {selectedPeriod.value === "custom" && (
-          <div className="custom-date-picker">
-            <input
-              type="date"
-              value={customStartDate}
-              onChange={(e) => setCustomStartDate(e.target.value)}
-              placeholder="Start Date"
-            />
-            <input
-              type="date"
-              value={customEndDate}
-              onChange={(e) => setCustomEndDate(e.target.value)}
-              placeholder="End Date"
-            />
-          </div>
-        )}
-
-        <div className="sma-selector">
-          <label>SMAs:</label>
-          {SMAS_PERIODS.map((period) => (
+      {/* SMA Selector */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <label className="font-bold mr-2">SMAs:</label>
+        {SMAS_PERIODS.map((period) => {
+          const isActive = selectedSMAs.includes(period);
+          return (
             <button
               key={period}
               type="button"
-              className={selectedSMAs.includes(period) ? "active" : "text-black"}
               onClick={() => toggleSMA(period)}
+              className={`px-3 py-2 border rounded cursor-pointer transition-colors duration-200 ${
+                isActive
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-gray-200 text-black border-gray-300 hover:bg-gray-300"
+              }`}
             >
               SMA({period})
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
-
-      <div className="price-display">
-        <div className="price-info">
-          <span className="font-bold text-black text-xl">{ticker}</span>
-          <span className="current-price">{currentPrice?.toFixed(2) || "N/A"}</span>
-          <span className="current-date">{currentDate}</span>
-        </div>
-        <div className="text-black flex items-center justify-center gap-2">
-          <span className="text-black font-semibold text-lg">
-          Volume:
-          </span> 
-          <span className="text-green-400 font-semibold text-lg">
-          {currentVolume ? (currentVolume / 1000).toFixed(1) + "K" : "N/A"}
-          </span>
-        </div>
-      </div>
-
-      <HighchartsReact
-        ref={chartRef}
-        highcharts={Highcharts}
-        constructorType={"stockChart"}
-        options={options}
-      />
     </div>
-  );
+
+    {/* Price Info */}
+    <div className="flex flex-col sm:flex-row justify-between mb-3 mt-3 p-3 rounded-sm bg-white w-full max-w-6xl">
+      <div className="price-info flex gap-2 items-center justify-start flex-wrap">
+        <span className="font-bold text-black text-xl">{ticker}</span>
+        <span className="text-blue-500 font-bold text-xl">{currentPrice?.toFixed(2) || "N/A"}</span>
+      </div>
+
+        <span className="text-black font-medium text-lg">
+        Date: 
+        <span className="text-black text-lg font-medium ml-1">
+        {currentDate}
+        </span>
+        </span>
+      <div className="text-black flex items-center justify-center gap-2 mt-2 sm:mt-0">
+      <span className="text-black font-medium text-lg">
+        O:
+        <span className='text-red-500 text-lg font-medium ml-1'>
+        {currentOpen?.toFixed(2) || "N/A"}
+          </span> 
+        </span>
+      <span className="text-black font-medium text-lg">
+        H:
+        <span className='text-red-500 text-lg font-medium ml-1'>
+        {currentHigh?.toFixed(2) || "N/A"}
+          </span> 
+        </span>
+      <span className="text-black font-medium text-lg">
+        L:
+        <span className='text-red-500 text-lg font-medium ml-1'>
+        {currentLow?.toFixed(2) || "N/A"}
+          </span> 
+        </span>
+      <span className="text-black font-medium text-lg">
+        C:
+        <span className='text-red-500 text-lg font-medium ml-1'>
+        {currentClose?.toFixed(2) || "N/A"}
+          </span> 
+        </span>
+      </div>
+    </div>
+
+    {/* Chart */}
+    <HighchartsReact
+      containerProps={{ className: "w-full max-w-6xl" }}
+      ref={chartRef}
+      highcharts={Highcharts}
+      constructorType={"stockChart"}
+      options={options}
+    />
+  </div>
+);
 };
 
 export default StockChart;
