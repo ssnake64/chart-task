@@ -1,0 +1,103 @@
+.stock-chart-container {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.controls {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.ticker-form input {
+  padding: 8px;
+  margin-right: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.ticker-form button, .period-selector button, .sma-selector button {
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.ticker-form button:hover, .period-selector button:hover, .sma-selector button:hover {
+  background-color: #e0e0e0;
+}
+
+.ticker-form button:active, .period-selector button.active, .sma-selector button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.period-selector, .sma-selector {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.period-selector label, .sma-selector label {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.custom-date-picker {
+  display: flex;
+  gap: 10px;
+}
+
+.custom-date-picker input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.price-display {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.price-info {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.ticker-name {
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.current-price {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.volume-info {
+  align-self: center;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .price-display {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
