@@ -101,3 +101,50 @@
     gap: 10px;
   }
 }
+
+.highcharts-range-selector {
+  z-index: 10;
+}
+
+.highcharts-range-selector-buttons {
+  position: relative;
+}
+
+.highcharts-range-selector-form {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  min-width: 120px;
+}
+
+.highcharts-range-selector-form select {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  appearance: menulist;
+}
+
+/* Ensure dropdown is visible on mobile */
+@media screen and (max-width: 768px) {
+  .highcharts-container {
+    overflow: visible !important;
+  }
+  
+  .highcharts-range-selector {
+    position: relative;
+  }
+  
+  .highcharts-range-selector-form {
+    position: absolute;
+    top: 30px;
+    left: 0;
+    z-index: 1000;
+  }
+}

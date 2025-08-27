@@ -20,8 +20,6 @@ const PREDEFINED_PERIODS = [
 
 const StockChart: React.FC = () => {
 
-  const [chartHeight, setChartHeight] = useState("600px");
-  const chartContainerRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState<Highcharts.Options>({
     
       chart: {
@@ -41,12 +39,21 @@ const StockChart: React.FC = () => {
         { type: "year", count: 1, text: "1Y" },
         { type: "all", text: "All" },
       ],
+
+      buttonTheme: {
+      width: 60,
+      height: 28,
+      zIndex: 50000,
+      style: { 
+        fontSize: "12px",
+      },
+      },
+      dropdown: "responsive", // "always" | "responsive" | "never"
     },
   });
   const [ticker, setTicker] = useState("AAPL");
   const [selectedPeriod, setSelectedPeriod] = useState(PREDEFINED_PERIODS[5]); // 1Y by default
-  const [customStartDate, setCustomStartDate] = useState("");
-  const [customEndDate, setCustomEndDate] = useState("");
+
   const [selectedSMAs, setSelectedSMAs] = useState<number[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [currentVolume, setCurrentVolume] = useState<number | null>(null);
@@ -55,53 +62,14 @@ const StockChart: React.FC = () => {
   const [currentHigh, setCurrentHigh] = useState<number | null>(null);
   const [currentLow, setCurrentLow] = useState<number | null>(null);
   const [currentClose, setCurrentClose] = useState<number | null>(null);
+  const [activeTicker, setActiveTicker] = useState("AAPL");
   const chartRef = useRef<HighchartsReact.RefObject>(null);
 
-
-
-    // Function to calculate chart height based on available space
-    const calculateChartHeight = () => {
-      if (chartContainerRef.current) {
-        const containerHeight = chartContainerRef.current.offsetHeight;
-        const controlsHeight = 150; // Approximate height of controls
-        const availableHeight = containerHeight - controlsHeight;
-        return `${Math.max(400, availableHeight)}px`; // Minimum height of 400px
-      }
-      return "600px"; // Default height
-    };
-
-    // Update chart height on window resize
-    useEffect(() => {
-      const handleResize = () => {
-        setChartHeight(calculateChartHeight());
-        
-        // Also tell Highcharts to resize
-        if (chartRef.current && chartRef.current.chart) {
-          setTimeout(() => {
-            chartRef.current.chart.reflow();
-          }, 100);
-        }
-      };
-
-      window.addEventListener('resize', handleResize);
-      handleResize(); // Initial calculation
-
-      return () => {
-        window.removeEventListener('resize', handleResize);
-      };
-    }, []);
 
   // Calculate dates for API call
   const calculateDateRange = () => {
     const endDate = new Date();
     const startDate = new Date();
-    
-    if (selectedPeriod.value === "custom") {
-      return {
-        startDate: customStartDate,
-        endDate: customEndDate
-      };
-    }
     
     startDate.setDate(startDate.getDate() - selectedPeriod.days);
     
@@ -126,6 +94,8 @@ const StockChart: React.FC = () => {
       if (!results || results.length === 0) {
         throw new Error("No data available for this symbol and time period");
       }
+
+      setActiveTicker(symbol);
 
       // Process OHLCV data
       const ohlc: [number, number, number, number, number][] = results.map(
@@ -296,11 +266,10 @@ const StockChart: React.FC = () => {
   // Fetch data on initial load
 useEffect(() => {
   fetchStockData(ticker);
-}, [selectedSMAs, selectedPeriod]);
+}, [ selectedSMAs,selectedPeriod]);
 
 return (
   <div
-    ref={chartContainerRef}
     className="min-h-screen w-full flex flex-col justify-center items-center"
   >
     
@@ -352,7 +321,7 @@ return (
     {/* Price Info */}
     <div className="flex flex-col sm:flex-row justify-between mb-3 mt-3 p-3 rounded-sm bg-white w-full max-w-6xl">
       <div className="price-info flex gap-2 items-center justify-start flex-wrap">
-        <span className="font-bold text-black text-xl">{ticker}</span>
+        <span className="font-bold text-black text-xl">{activeTicker}</span>
         <span className="text-blue-500 font-bold text-xl">{currentPrice?.toFixed(2) || "N/A"}</span>
       </div>
 
@@ -362,7 +331,7 @@ return (
         {currentDate}
         </span>
         </span>
-      <div className="text-black flex items-center justify-center gap-2 mt-2 sm:mt-0">
+      <div className="text-black flex items-center justify-start gap-2 mt-2 sm:mt-0">
       <span className="text-black font-medium text-lg">
         O:
         <span className='text-red-500 text-lg font-medium ml-1'>
